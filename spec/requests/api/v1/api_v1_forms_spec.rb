@@ -68,4 +68,5 @@ describe "GET /forms/:friendly_id" do
       expect_status(404)
     end
   end
-end      
+end  
+
