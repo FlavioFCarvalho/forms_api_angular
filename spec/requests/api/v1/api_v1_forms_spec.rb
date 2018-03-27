@@ -181,4 +181,47 @@ describe "PUT /forms/:friendly_id" do
   end
 end
 
+describe "DELETE /forms/:friendly_id" do
+  before do
+    @user = create(:user)
+  end
+
+  context "When form exists" do
+
+    context "And user is the owner" do
+      before do
+        @form = create(:form, user: @user)
+        delete "/api/v1/forms/#{@form.friendly_id}", params: {}, headers: header_with_authentication(@user)
+      end
+
+      it "returns 200" do
+        expect_status(200)
+      end
+
+      it "form are deleted" do
+        expect(Form.all.count).to eql(0)
+      end
+    end
+
+    context "And user is not the owner" do
+      before do
+        @form = create(:form)
+        delete "/api/v1/forms/#{@form.friendly_id}", params: {}, headers: header_with_authentication(@user)
+      end
+
+      it "returns 403" do
+        expect_status(403)
+      end
+    end
+  end
+
+  context "When form dont exists" do
+    it "returns 404" do
+      delete "/api/v1/forms/#{FFaker::Lorem.word}", params: {}, headers: header_with_authentication(@user)
+      expect_status(404)
+    end
+  end
+end
+
+
 
