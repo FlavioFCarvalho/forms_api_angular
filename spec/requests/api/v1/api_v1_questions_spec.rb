@@ -122,3 +122,54 @@ describe "PUT /questions/:id" do
     end
   end
 end
+
+describe "DELETE /questions/:id" do
+  before do
+    @user = create(:user)
+  end
+
+  context "With Invalid authentication headers" do
+    it_behaves_like :deny_without_authorization, :delete, "/api/v1/questions/0"
+  end
+
+
+  context "With valid authentication headers" do
+
+    context "When question exists" do
+
+      context "And user is the owner" do
+        before do
+          @form = create(:form, user: @user)
+          @question = create(:question, form: @form)
+          delete "/api/v1/questions/#{@question.id}", params: {}, headers: header_with_authentication(@user)
+        end
+
+        it "returns 200" do
+          expect_status(200)
+        end
+
+        it "question are deleted" do
+          expect(Question.all.count).to eql(0)
+        end
+      end
+
+      context "And user is not the owner" do
+        before do
+          @question = create(:question)
+          delete "/api/v1/questions/#{@question.id}", params: {}, headers: header_with_authentication(@user)
+        end
+
+        it "returns 403" do
+          expect_status(403)
+        end
+      end
+    end
+
+    context "When question dont exists" do
+      it "returns 404" do
+        delete "/api/v1/questions/0", params: {}, headers: header_with_authentication(@user)
+        expect_status(404)
+      end
+    end
+  end
+end
