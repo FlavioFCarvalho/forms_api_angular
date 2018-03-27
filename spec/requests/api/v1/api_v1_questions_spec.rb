@@ -57,3 +57,68 @@ describe "POST /questions" do
     end
   end
 end
+
+describe "PUT /questions/:id" do
+
+  context "With Invalid authentication headers" do
+    it_behaves_like :deny_without_authorization, :put, "/api/v1/questions/0"
+  end
+
+  context "With valid authentication headers" do
+    before do
+      @user = create(:user)
+    end
+
+    context "When question exists" do
+
+      context "And user is the form owner" do
+        before do
+          @form = create(:form, user: @user)
+          @question = create(:question, form: @form)
+          @question_attributes = attributes_for(:question, id: @question.id)
+          put "/api/v1/questions/#{@question.id}", params: {question: @question_attributes}, headers: header_with_authentication(@user)
+        end
+
+        it "returns 200" do
+          expect_status(200)
+        end
+
+        it "question are updated with correct data" do
+          @question.reload
+          @question_attributes.each do |field|
+            expect(@question[field.first]).to eql(field.last)
+          end
+        end
+
+        it "Returned data is correct" do
+          @question_attributes.each do |field|
+            expect(json[field.first.to_s]).to eql(field.last)
+          end
+        end
+      end
+
+      context "And user is not the owner" do
+        before do
+          @question = create(:question)
+          @question_attributes = attributes_for(:question, id: @question.id)
+          put "/api/v1/questions/#{@question.id}", params: {question: @question_attributes}, headers: header_with_authentication(@user)
+        end
+
+        it "returns 403" do
+          expect_status(403)
+        end
+      end
+    end
+
+    context "When question dont exists" do
+      before do
+        @question_attributes = attributes_for(:question)
+      end
+
+      it "returns 404" do
+        delete "/api/v1/questions/0", params: {question: @question_attributes}, headers: header_with_authentication(@user)
+        expect_status(404)
+      end
+    end
+  end
+end
