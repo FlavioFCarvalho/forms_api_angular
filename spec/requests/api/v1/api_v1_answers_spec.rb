@@ -27,3 +27,45 @@ describe "GET /answers" do
     end
   end
 end
+
+describe "GET /answers/:id" do
+  before do
+    @user = create(:user)
+    @form = create(:form, user: @user)
+  end
+
+  context "With Invalid authentication headers" do
+    it_behaves_like :deny_without_authorization, :get, "/api/v1/answers/0"
+  end
+
+  context "With valid authentication headers" do
+    context "When answer exists" do
+      before do
+        @answer = create(:answer, form: @form)
+        @questions_answers_1 = create(:questions_answer, answer: @answer)
+        @questions_answers_2 = create(:questions_answer, answer: @answer)          
+        get "/api/v1/answers/#{@answer.id}", params: {}, headers: header_with_authentication(@user)
+      end
+
+      it "returns 200" do
+        expect_status(200)
+      end
+
+      it "returned Answer with right datas" do
+        expect(json.except("questions_answers")).to eql(JSON.parse(@answer.to_json))
+      end
+
+      it "returned associated questions_answers" do
+        expect(json['questions_answers'].first).to eql(JSON.parse(@questions_answers_1.to_json))
+        expect(json['questions_answers'].last).to  eql(JSON.parse(@questions_answers_2.to_json))
+      end
+    end
+
+    context "When answer dont exists" do
+      it "returns 404" do
+        get "/api/v1/answers/#{FFaker::Lorem.word}", params: {}, headers: header_with_authentication(@user)
+        expect_status(404)
+      end
+    end
+  end
+end
